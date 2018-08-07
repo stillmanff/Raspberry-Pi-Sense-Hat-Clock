@@ -24,3 +24,9 @@ Rich Stillman (stillmanff) adds:
 2. Added a 12 hour mode that can be toggled via the twelvehour boolean
 3. Added a blinking LED as a "second hand" that can be toggled via the blinkingSecond boolean
 4. Turned off the high order digit in single digit hours
+
+Start with 
+```python clock.py & ```
+
+If you don't want terminal output, use
+```python clock.py > /dev/null &
