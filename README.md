@@ -20,7 +20,7 @@ This assumes the python program is in directory ```/home/pi/clock/```
 
 Rich Stillman (stillmanff) adds:
 
-1. Bypassed the cron job to make the clock work standalone
+1. Added internal timer loop to make the clock work standalone instead of invoking cron
 2. Added a 12 hour mode that can be toggled via the twelvehour boolean
 3. Added a blinking LED as a "second hand" that can be toggled via the blinkingSecond boolean
 4. Turned off the high order digit in single digit hours
