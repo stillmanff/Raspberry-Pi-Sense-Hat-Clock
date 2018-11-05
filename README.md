@@ -8,16 +8,6 @@ M M
 
 on the Sense Hat
 
-I've set it up in crontab to run every minute.
-
-```sudo crontab -e```
-
-Add the following to run it every minute:
-
-```* * * * * /home/pi/clock/clock.py >/dev/null 2>&1```
-
-This assumes the python program is in directory ```/home/pi/clock/```
-
 Rich Stillman (stillmanff) adds:
 
 1. Added internal timer loop to make the clock work standalone instead of invoking cron
@@ -30,3 +20,15 @@ Start with
 
 If you don't want terminal output, use
 ```python clock.py > /dev/null &
+
+Update 11/5/2018:
+Changed blinking second pixel to include barometric pressure information.
+Clock compares current pressure with pressure from a half hour ago (sliding window).
+Displays green if rising, red if falling.
+Program measures barometric pressure in in/Hg and rounds to 1/100th inch.
+
+Coming features:
+1. Different colors for "rising/falling rapidly" and "rising/falling slowly"
+2. Press the joystick to temporarily display current barometric pressure
+
+Note: None of the other PiHat sensors seem accurate enough for real world use.
