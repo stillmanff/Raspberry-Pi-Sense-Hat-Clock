@@ -27,6 +27,17 @@ Clock compares current pressure with pressure from a half hour ago (sliding wind
 Displays green if rising, red if falling.
 Program measures barometric pressure in in/Hg and rounds to 1/100th inch.
 
+Update 1/21/2019:
+Added joystick controls based on christmastree project
+1. Center press on joystick turns display on/off
+2. Joystick down dims display (sense.low_light = True)
+3. Joystick up brightens display
+
+Also, fixed time on/off logic to play nicely with switch display on/off.
+
+Note that the program is written to use the Pi upside down (power cable on top).
+Therefore, the up/down logic of the joystick is inverted.
+
 Coming features:
 1. Different colors for "rising/falling rapidly" and "rising/falling slowly"
 2. Press the joystick to temporarily display current barometric pressure

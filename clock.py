@@ -7,6 +7,24 @@ from time import sleep
 
 sense = SenseHat()
 
+#**********************************************************************************************************
+#Parameters  - everything that might need to be changed is in this section.
+activeTimeStartHour = 23
+activeTimeStartMinute = 0
+quietTimeStartHour = 7
+quietTimeStartMinute = 0
+clockAlwaysActive = False
+dimDisplayHour = 18         #Controls for night mode on display.
+brightDisplayHour = 7       #Future improvement: add formula to approximate sunset times, if needed.
+dimDisplay = True           #Make display dimming an option
+twelvehour = True
+blinkingSecond = True
+blinkingBarometer = True
+barometerInterval = 1800   # Update barometer value in seconds - twice per hour seems like a good interval
+#End of parameters
+#***********************************************************************************************************
+
+
 def mToi(pValue):
     answer = pValue * 0.0295301
     return answer
@@ -20,9 +38,48 @@ def initBarometer(baromArr, baromInt):
 def shiftPressures(baromArr, currPress):     #shift all historic barometer values to the left
     for i in range (1, len(baromArr)):
         baromArr[i - 1] = baromArr[i]
-    baromArr[len(baromArr) - 1] = currPress
+        baromArr[len(baromArr) - 1] = currPress
     return baromArr
 
+#Sleep loop. This operation is complicated by the fact that neither the Python sleep() function nor the SenseHat wait_for_events() function are interruptible, so
+#designing a routine that allows two different ways to interrupt the dormant stage (time and button press) is a little involved. This works, though.
+#The clock is dark while executing this function.
+def holdClock():           #routine to turn off clock on middle button press, then turn it back on when pressed again
+    clockOff = True                                     #Flag to deal with long presses
+    sense.clear()                                      #Turn off the clock
+    sense.stick.get_events()                           #Clear all old inputs
+    while clockOff:                                     #Lets us loop till the explicit set of conditions is satisfied
+        sleep (0.25)                                   #Four times a second ought to be enough. Reduce CPU load.
+        turnClockOn = sense.stick.get_events()          #Would normally use wait_for_event to sleep till the button is pressed again, but need to wake up now and then to check time
+        if ((len(turnClockOn) > 0) | (not(clockAlwaysActive))):     #If there may be a timed wakeup, check status whether or not the button was pressed
+            passedTest = False                                  #Workaround for Python limitation - all conditions checked in compound if, even if the first is invalid and causes errors in the rest
+            if (len(turnClockOn) > 0):                           #First test: is this a button press?
+                if ((turnClockOn[len(turnClockOn) - 1].direction == "middle") & (turnClockOn[len(turnClockOn) - 1].action == "released")):    #If we want timed on/off, check for button and time
+                    passedTest = True
+                else:
+                    lightLevel(turnClockOn)                      #Are we trying to dim or brighten the clock?
+            else:
+                if ((not(clockAlwaysActive)) & (time.localtime().tm_hour == activeTimeStartHour) & (time.localtime().tm_min == activeTimeStartMinute) & (time.localtime().tm_sec < 3)):    #We only test for time if the button test failed. 
+                    passedTest = True
+                else:
+                    pass
+            if passedTest == True:
+                clockOff = False
+                sense.stick.get_events()                       #Clear the event queue so the clock doesn't turn right off again
+            else:
+                pass                                           #The clock is still supposed to be off - keep going.
+        else:
+            pass
+
+def lightLevel(turnClockOn):
+    #Note that the clock is meant to be run with the Pi inverted, so up is literally down. That explains the reversed logic in this method.
+        if ((turnClockOn[len(turnClockOn) - 1].direction == "up") & (turnClockOn[len(turnClockOn) - 1].action == "released")):      #Up and down are switches for full light and low light
+            sense.low_light = True                                                                                                #Dim display (up is actually down)
+        elif ((turnClockOn[len(turnClockOn) - 1].direction == "down") & (turnClockOn[len(turnClockOn) - 1].action == "released")):     
+            sense.low_light = False                                                                                               #Bright display (down is actually up)
+        else:
+            pass
+    
 number = [
 0,1,1,1, #zero
 0,1,0,1,
@@ -74,10 +131,6 @@ blank = [
 ]
 
 
-twelvehour = True
-blinkingSecond = True
-blinkingBarometer = True
-barometerInterval = 1800   # Update barometer value in seconds - twice per hour seems like a good interval
 barometerTimer = 0      #Initialize counter
 currentPressure = int(mToi(sense.get_pressure()) * 100) / 100.
 
@@ -119,78 +172,93 @@ else:
                 
 
 while True:
-	hour = time.localtime().tm_hour
-        if twelvehour:
-                if hour > 12:
-                        hour = hour - 12
-                if hour == 0:
-                        hour = 12
-	minute = time.localtime().tm_min
+    #Optional setting for dimming display at night
+    if dimDisplay:
+        if (time.localtime().tm_hour == dimDisplayHour) & (time.localtime().tm_min == 0) & (time.localtime().tm_sec < 3):
+            sense.low_light = True      #dim display
+        if (time.localtime().tm_hour == brightDisplayHour) & (time.localtime().tm_min == 0) & (time.localtime().tm_sec < 3):
+            sense.low_light = False      #bright display
+    if (clockAlwaysActive == False) & (time.localtime().tm_hour == quietTimeStartHour) & (time.localtime().tm_min == quietTimeStartMinute) & (time.localtime().tm_sec < 2):  #Time to go to sleep? 
+                                                                                                                                                                             # Seconds reading needed so we don't turn the clock off again after manually turning it on.
+        holdClock()         #Check first for the timer - are we sleeping the clock?
+    switchOff = sense.stick.get_events()     #Has the button been pressed to turn the clock off?
+    if len(switchOff) > 0:
+        if (switchOff[len(switchOff) - 1].direction == "middle") & (switchOff[len(switchOff) - 1].action == "released"):    #Was the middle button pressed?
+            holdClock()
+        else:
+            lightLevel(switchOff)              #Are we trying to dim or brighten the clock?
+    hour = time.localtime().tm_hour
+    if twelvehour:
+        if hour > 12:
+            hour = hour - 12
+        if hour == 0:
+            hour = 12
+    minute = time.localtime().tm_min
 #        minute = minute + 4     #Debug adjustment - remove this
 
 	# Map digits to clockImage array
 
-	pixelOffset = 0
-	index = 0
-	for indexLoop in range(0, 4):
-		for counterLoop in range(0, 4):
-			if (hour >= 10):
-				clockImage[index] = number[int(hour/10)*16+pixelOffset]
-                        else:
-                                clockImage[index] = blank
-			clockImage[index+4] = number[int(hour%10)*16+pixelOffset]
-			clockImage[index+32] = number[int(minute/10)*16+pixelOffset]
-			clockImage[index+36] = number[int(minute%10)*16+pixelOffset]
-			pixelOffset = pixelOffset + 1
-			index = index + 1
-		index = index + 4
+    pixelOffset = 0
+    index = 0
+    for indexLoop in range(0, 4):
+        for counterLoop in range(0, 4):
+            if (hour >= 10):
+                clockImage[index] = number[int(hour/10)*16+pixelOffset]
+            else:
+                clockImage[index] = blank
+            clockImage[index+4] = number[int(hour%10)*16+pixelOffset]
+            clockImage[index+32] = number[int(minute/10)*16+pixelOffset]
+            clockImage[index+36] = number[int(minute%10)*16+pixelOffset]
+            pixelOffset = pixelOffset + 1
+            index = index + 1
+        index = index + 4
 
 	# Colour the hours and minutes
 
-	for index in range(0, 64):
-		if (clockImage[index]):
-                        if index < 32:
-				clockImage[index] = hourColour
-			else:
-				clockImage[index] = minuteColour
-		else:
-			clockImage[index] = empty
+    for index in range(0, 64):
+        if (clockImage[index]):
+            if index < 32:
+                clockImage[index] = hourColour
+            else:
+                clockImage[index] = minuteColour
+        else:
+            clockImage[index] = empty
 
         # Clear the leading hour if zero
-        if (hour < 10):
-                for outerIndex in range (0,25,8):
-                        for indexLoop in range (0,4):
-                                clockImage[indexLoop + outerIndex] = empty
+    if (hour < 10):
+        for outerIndex in range (0,25,8):
+            for indexLoop in range (0,4):
+                clockImage[indexLoop + outerIndex] = empty
                         
 
 	# Display the time
-
-	sense.set_rotation(180) # Optional
-	sense.low_light = True # Optional
-        if blinkingSecond:
+        
+    sense.set_rotation(180) # Optional
+#    sense.low_light = True # Optional
+    if blinkingSecond:
 #                barometerTimer = barometerTimer + 1
 #                if barometerTimer >= barometerInterval:      #get ready to update the barometer dot color
 #                        barometerTimer = 0                   #reinitialize
 #                        oldPressure = currentPressure
-                currentPressure = int(mToi(sense.get_pressure()) * 100) / 100.   #make sure the change is significant - two decimal places
-                pressureArray = shiftPressures(pressureArray, currentPressure)                  #put the new pressure at the end of the array
-                oldPressure = pressureArray[0]                                  #look back as far as possible
+        currentPressure = int(mToi(sense.get_pressure()) * 100) / 100.   #make sure the change is significant - two decimal places
+        pressureArray = shiftPressures(pressureArray, currentPressure)                  #put the new pressure at the end of the array
+        oldPressure = pressureArray[0]                                  #look back as far as possible
 #                print oldPressure, currentPressure, pressureArray
 #                currentPressure = currentPressure * (random() + 0.5)
 #                print oldPressure, currentPressure
-                if oldPressure > currentPressure:
-                    dotColor = red          #pressure falling
-                elif oldPressure < currentPressure:
-                    dotColor = green        #Pressure rising
-                else:
-                    dotColor = white        #Pressure steady (within margin of error)
-                clockImage[0] = dotColor
-                sense.set_pixels(clockImage)
-                sleep(1)
-                clockImage[0] = empty
-                sense.set_pixels(clockImage)
-                sleep(1)
+        if oldPressure > currentPressure:
+            dotColor = red          #pressure falling
+        elif oldPressure < currentPressure:
+            dotColor = green        #Pressure rising
         else:
-                sense.set_pixels(clockImage)
-                sleep(2)
+            dotColor = white        #Pressure steady (within margin of error)
+        clockImage[0] = dotColor
+        sense.set_pixels(clockImage)
+        sleep(1)
+        clockImage[0] = empty
+        sense.set_pixels(clockImage)
+        sleep(1)
+    else:
+        sense.set_pixels(clockImage)
+        sleep(2)
         
