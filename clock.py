@@ -20,6 +20,7 @@ dimDisplay = True           #Make display dimming an option
 twelvehour = True
 blinkingSecond = True
 blinkingBarometer = True
+orientation = 180           #default orientation is upside down (power cable on top). Can modify in lightLevel() using left and right sticks
 barometerInterval = 1800   # Update barometer value in seconds - twice per hour seems like a good interval
 #End of parameters
 #***********************************************************************************************************
@@ -57,7 +58,7 @@ def holdClock():           #routine to turn off clock on middle button press, th
                 if ((turnClockOn[len(turnClockOn) - 1].direction == "middle") & (turnClockOn[len(turnClockOn) - 1].action == "released")):    #If we want timed on/off, check for button and time
                     passedTest = True
                 else:
-                    lightLevel(turnClockOn)                      #Are we trying to dim or brighten the clock?
+                    orientation = lightLevel(turnClockOn, orientation)                      #Are we trying to dim or brighten the clock?
             else:
                 if ((not(clockAlwaysActive)) & (time.localtime().tm_hour == activeTimeStartHour) & (time.localtime().tm_min == activeTimeStartMinute) & (time.localtime().tm_sec < 3)):    #We only test for time if the button test failed. 
                     passedTest = True
@@ -71,14 +72,23 @@ def holdClock():           #routine to turn off clock on middle button press, th
         else:
             pass
 
-def lightLevel(turnClockOn):
+def lightLevel(turnClockOn, orientation):     #Added orientation as parameter
     #Note that the clock is meant to be run with the Pi inverted, so up is literally down. That explains the reversed logic in this method.
         if ((turnClockOn[len(turnClockOn) - 1].direction == "up") & (turnClockOn[len(turnClockOn) - 1].action == "released")):      #Up and down are switches for full light and low light
             sense.low_light = True                                                                                                #Dim display (up is actually down)
         elif ((turnClockOn[len(turnClockOn) - 1].direction == "down") & (turnClockOn[len(turnClockOn) - 1].action == "released")):     
             sense.low_light = False                                                                                               #Bright display (down is actually up)
+        elif ((turnClockOn[len(turnClockOn) - 1].direction == "right") & (turnClockOn[len(turnClockOn) - 1].action == "released")):
+            orientation = orientation + 90          #rotate clockwise
+            if (orientation >= 360):
+                orientation = orientation - 360     #bring angle back into reasonable range
+        elif ((turnClockOn[len(turnClockOn) - 1].direction == "left") & (turnClockOn[len(turnClockOn) - 1].action == "released")):
+            orientation = orientation - 90          #rotate counterclockwise
+            if (orientation < 0):
+                orientation = orientation + 360     #bring angle back to usable range
         else:
             pass
+        return orientation
     
 number = [
 0,1,1,1, #zero
@@ -186,7 +196,7 @@ while True:
         if (switchOff[len(switchOff) - 1].direction == "middle") & (switchOff[len(switchOff) - 1].action == "released"):    #Was the middle button pressed?
             holdClock()
         else:
-            lightLevel(switchOff)              #Are we trying to dim or brighten the clock?
+            orientation = lightLevel(switchOff, orientation)              #Are we trying to dim or brighten the clock?
     hour = time.localtime().tm_hour
     if twelvehour:
         if hour > 12:
@@ -232,8 +242,8 @@ while True:
                         
 
 	# Display the time
-        
-    sense.set_rotation(180) # Optional
+
+    sense.set_rotation(orientation) # Optional
 #    sense.low_light = True # Optional
     if blinkingSecond:
 #                barometerTimer = barometerTimer + 1
