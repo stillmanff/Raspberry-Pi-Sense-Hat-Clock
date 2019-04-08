@@ -35,10 +35,13 @@ Added joystick controls based on christmastree project
 
 Also, fixed time on/off logic to play nicely with switch display on/off.
 
-Update 2/26/2019:
 Added display rotation activated by joystick left/ joystick right. Note two things:
+Update 2/26/2019:
    1. This uses all the possible inputs from the joystick, so the barometric display on the to-do list probably won't happen.
    2. The orientation of the stick does not move with the orientation of the display. This will have to wait for a later update.  
+
+Update 4/7/2019:
+Fixed bug in function call  that failed to pass a parameter and caused clock to crash..
 
 Note that the program is written to use the Pi upside down (power cable on top).
 Therefore, the up/down logic of the joystick is inverted.

@@ -9,12 +9,12 @@ sense = SenseHat()
 
 #**********************************************************************************************************
 #Parameters  - everything that might need to be changed is in this section.
-activeTimeStartHour = 23
+activeTimeStartHour = 7
 activeTimeStartMinute = 0
-quietTimeStartHour = 7
+quietTimeStartHour = 22
 quietTimeStartMinute = 0
 clockAlwaysActive = False
-dimDisplayHour = 18         #Controls for night mode on display.
+dimDisplayHour = 19         #Controls for night mode on display.
 brightDisplayHour = 7       #Future improvement: add formula to approximate sunset times, if needed.
 dimDisplay = True           #Make display dimming an option
 twelvehour = True
@@ -45,7 +45,7 @@ def shiftPressures(baromArr, currPress):     #shift all historic barometer value
 #Sleep loop. This operation is complicated by the fact that neither the Python sleep() function nor the SenseHat wait_for_events() function are interruptible, so
 #designing a routine that allows two different ways to interrupt the dormant stage (time and button press) is a little involved. This works, though.
 #The clock is dark while executing this function.
-def holdClock():           #routine to turn off clock on middle button press, then turn it back on when pressed again
+def holdClock(orientation):           #routine to turn off clock on middle button press, then turn it back on when pressed again
     clockOff = True                                     #Flag to deal with long presses
     sense.clear()                                      #Turn off the clock
     sense.stick.get_events()                           #Clear all old inputs
@@ -190,11 +190,11 @@ while True:
             sense.low_light = False      #bright display
     if (clockAlwaysActive == False) & (time.localtime().tm_hour == quietTimeStartHour) & (time.localtime().tm_min == quietTimeStartMinute) & (time.localtime().tm_sec < 2):  #Time to go to sleep? 
                                                                                                                                                                              # Seconds reading needed so we don't turn the clock off again after manually turning it on.
-        holdClock()         #Check first for the timer - are we sleeping the clock?
+        holdClock(orientation)         #Check first for the timer - are we sleeping the clock?
     switchOff = sense.stick.get_events()     #Has the button been pressed to turn the clock off?
     if len(switchOff) > 0:
         if (switchOff[len(switchOff) - 1].direction == "middle") & (switchOff[len(switchOff) - 1].action == "released"):    #Was the middle button pressed?
-            holdClock()
+            holdClock(orientation)
         else:
             orientation = lightLevel(switchOff, orientation)              #Are we trying to dim or brighten the clock?
     hour = time.localtime().tm_hour
