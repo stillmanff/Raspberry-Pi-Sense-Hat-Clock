@@ -14,7 +14,7 @@ activeTimeStartMinute = 0
 quietTimeStartHour = 22
 quietTimeStartMinute = 0
 clockAlwaysActive = False
-dimDisplayHour = 19         #Controls for night mode on display.
+dimDisplayHour = 16         #Controls for night mode on display.
 brightDisplayHour = 7       #Future improvement: add formula to approximate sunset times, if needed.
 dimDisplay = True           #Make display dimming an option
 twelvehour = True
@@ -168,17 +168,17 @@ clockImage = [
 ]
 
 if twelvehour:
-        print '12 hour mode'
+        print ('12 hour mode')
 else:
-        print '24 hour mode'
+        print ('24 hour mode')
 if blinkingSecond:
-        print 'Blinking seconds enabled'
+        print ('Blinking seconds enabled')
         if blinkingBarometer:
-                print 'Barometer color enabled'
+                print ('Barometer color enabled')
         else:
-                print 'Barometer color disabled'
+                print ('Barometer color disabled')
 else:
-        print 'Blinking seconds disabled'
+        print ('Blinking seconds disabled')
                 
 
 while True:

@@ -43,6 +43,9 @@ Update 2/26/2019:
 Update 4/7/2019:
 Fixed bug in function call  that failed to pass a parameter and caused clock to crash..
 
+Update 11/29/2019:
+Updated syntax to run in Python 3.
+
 Note that the program is written to use the Pi upside down (power cable on top).
 Therefore, the up/down logic of the joystick is inverted.
 
