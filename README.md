@@ -35,16 +35,19 @@ Added joystick controls based on christmastree project
 
 Also, fixed time on/off logic to play nicely with switch display on/off.
 
-Added display rotation activated by joystick left/ joystick right. Note two things:
-Update 2/26/2019:
-   1. This uses all the possible inputs from the joystick, so the barometric display on the to-do list probably won't happen.
-   2. The orientation of the stick does not move with the orientation of the display. This will have to wait for a later update.  
-
-Update 4/7/2019:
-Fixed bug in function call  that failed to pass a parameter and caused clock to crash..
 
 Update 11/29/2019:
-Updated syntax to run in Python 3.
+Updated code for Python3 compatibility. This only required changing the format
+of print statements.
+
+Update 12/29/2019: Tuned barometer behavior, which was way too sensitive to
+trivial fluctuations. Barometer now averages the most recent five minutes
+of readings and the oldest five minutes of readings, and looks for a change
+of 0.01 in/hg or more. The five minute average is hardcoded but the tolerance
+is parameterized to allow the sensitivity of the barometer to be tuned.
+Changed look-back period to two hours, which is a useful length of time for
+comparing barometric pressures. Look-back (in seconds) is also now
+parameterized to allow for barometer tuning.
 
 Note that the program is written to use the Pi upside down (power cable on top).
 Therefore, the up/down logic of the joystick is inverted.
@@ -54,3 +57,4 @@ Coming features:
 2. Press the joystick to temporarily display current barometric pressure
 
 Note: None of the other PiHat sensors seem accurate enough for real world use.
+
