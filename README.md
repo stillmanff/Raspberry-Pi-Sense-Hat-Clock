@@ -40,6 +40,7 @@ Update 11/29/2019:
 Updated code for Python3 compatibility. This only required changing the format
 of print statements.
 
+
 Update 12/29/2019: Tuned barometer behavior, which was way too sensitive to
 trivial fluctuations. Barometer now averages the most recent five minutes
 of readings and the oldest five minutes of readings, and looks for a change
@@ -49,11 +50,13 @@ Changed look-back period to two hours, which is a useful length of time for
 comparing barometric pressures. Look-back (in seconds) is also now
 parameterized to allow for barometer tuning.
 
+Update 1/1/2020: Added double blink on seconds icon if the barometer is rising or falling more rapidly than a settable parameter. 
+
 Note that the program is written to use the Pi upside down (power cable on top).
 Therefore, the up/down logic of the joystick is inverted.
 
 Coming features:
-1. Different colors for "rising/falling rapidly" and "rising/falling slowly"
+1. Set clock rotation automatically based on orientation sensors
 2. Press the joystick to temporarily display current barometric pressure
 
 Note: None of the other PiHat sensors seem accurate enough for real world use.

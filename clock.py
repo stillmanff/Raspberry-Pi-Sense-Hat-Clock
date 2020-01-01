@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 
 from sense_hat import SenseHat
@@ -20,9 +21,11 @@ dimDisplay = True           #Make display dimming an option
 twelvehour = True
 blinkingSecond = True
 blinkingBarometer = True
-orientation = 180           #default orientation is upside down (power cable on top). Can modify in lightLevel() using left and right sticks
-barometerInterval = 3600 * 2   # Update barometer value array size - two hours so we can compare old to new values
-barometerTolerance = 0.01  # parameter for tuning the sensitivity of the barometer LED
+orientation = 180               # default orientation is upside down (power cable on top). Can modify in lightLevel() using left and right sticks
+barometerInterval = 3600 * 2    # Update barometer value array size - two hours so we can compare old to new values
+barometerTolerance = 0.01       # parameter for tuning the sensitivity of the barometer LED
+fastBarometerTolerance = 0.02   # parameter for showing faster flash if barometer is rising or falling rapidly
+fastBlink = False               # fast blink for rapidly changing barometer
 #End of parameters
 #***********************************************************************************************************
 
@@ -42,6 +45,17 @@ def shiftPressures(baromArr, currPress):     #shift all historic barometer value
         baromArr[i - 1] = baromArr[i]
         baromArr[len(baromArr) - 1] = currPress
     return baromArr
+
+def fastBlinkSecond(clockDisplay, dotColor): #do one rapid blink during the on cycle of the second hand to show rapid change in barometer
+                                             #clock array is always passed here with the seconds dot lit
+    sleep(0.40)                              #let it shine for a while
+    clockDisplay[0] = empty                  #turn it off
+    sense.set_pixels(clockImage)
+    sleep(0.20)
+    clockDisplay[0] = dotColor               #restore the original color
+    sense.set_pixels(clockImage)
+    sleep(0.40)                              #complete the one second dot cycle
+    return
 
 #Sleep loop. This operation is complicated by the fact that neither the Python sleep() function nor the SenseHat wait_for_events() function are interruptible, so
 #designing a routine that allows two different ways to interrupt the dormant stage (time and button press) is a little involved. This works, though.
@@ -262,36 +276,55 @@ while True:
     sense.set_rotation(orientation) # Optional
 #    sense.low_light = True # Optional
     if blinkingSecond:
+        if blinkingBarometer:
 #                barometerTimer = barometerTimer + 1
 #                if barometerTimer >= barometerInterval:      #get ready to update the barometer dot color
 #                        barometerTimer = 0                   #reinitialize
 #                        oldPressure = currentPressure
-        currentPressure = int(mToi(sense.get_pressure()) * 100) / 100.   #make sure the change is significant - two decimal places
-        pressureArray = shiftPressures(pressureArray, currentPressure)                  #put the new pressure at the end of the array
-        oldPressure = pressureArray[0]                                  #look back as far as possible
+            currentPressure = int(mToi(sense.get_pressure()) * 100) / 100.   #make sure the change is significant - two decimal places
+            pressureArray = shiftPressures(pressureArray, currentPressure)                  #put the new pressure at the end of the array
+            oldPressure = pressureArray[0]                                  #look back as far as possible
 #                print (oldPressure, currentPressure, pressureArray)
 #                currentPressure = currentPressure * (random() + 0.5)
 #                print (oldPressure, currentPressure)
-        oldAvg = avgPressure(pressureArray, 'first')
-        currAvg = avgPressure(pressureArray, 'last')
+            oldAvg = avgPressure(pressureArray, 'first')
+            currAvg = avgPressure(pressureArray, 'last')
 #        print (oldPressure, currentPressure, oldAvg, currAvg)
-        if oldAvg - currAvg > barometerTolerance:
-            dotColor = red          #pressure falling
-        elif oldAvg - currAvg < barometerTolerance * -1.0:
-            dotColor = green        #Pressure rising
+            if oldAvg - currAvg > barometerTolerance:
+                dotColor = red          #pressure falling
+            elif oldAvg - currAvg < barometerTolerance * -1.0:
+                dotColor = green        #Pressure rising
+            else:
+                dotColor = white        #Pressure steady (within margin of error)
         else:
-            dotColor = white        #Pressure steady (within margin of error)
-######### Old code for comparing barometric pressures. Delete after new method is tested.
+            dotColor = white            #We're not tracking the barometer, default seconds color is white
+
+#Update - add fast blink if barometer is changing rapidly
+        if blinkingBarometer:
+            if (abs(oldAvg - currAvg) >= fastBarometerTolerance):   #Did barometer just start rising or falling rapidly?
+                fastBlink = True                                    #Double the treetop blink rate
+            elif (abs(oldAvg - currAvg) < fastBarometerTolerance):  #Did barometer just stop rising or falling rapidly?
+                fastBlink = False                                   #Reset to default blink rate
+            else:
+                pass          #Nothing changes
+#            print (oldAvg, currAvg, abs(oldAvg - currAvg))
+        else:
+            pass
+               
+
+
 #        if oldPressure > currentPressure:
 #            dotColor = red          #pressure falling
 #        elif oldPressure < currentPressure:
 #            dotColor = green        #Pressure rising
 #        else:
 #            dotColor = white        #Pressure steady (within margin of error)
-######## End of old code
         clockImage[0] = dotColor
         sense.set_pixels(clockImage)
-        sleep(1)
+        if fastBlink:
+            fastBlinkSecond(clockImage, dotColor)        #Flash the seconds icon to show rapid rise
+        else:
+            sleep(1)
         clockImage[0] = empty
         sense.set_pixels(clockImage)
         sleep(1)
