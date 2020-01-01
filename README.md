@@ -50,7 +50,10 @@ Changed look-back period to two hours, which is a useful length of time for
 comparing barometric pressures. Look-back (in seconds) is also now
 parameterized to allow for barometer tuning.
 
-Update 1/1/2020: Added double blink on seconds icon if the barometer is rising or falling more rapidly than a settable parameter. 
+Update 1/1/2020: Added double blink on seconds icon if the barometer is
+rising or falling more rapidly than a settable parameter.
+
+Added a few more parameters and tuned the barometer settings.
 
 Note that the program is written to use the Pi upside down (power cable on top).
 Therefore, the up/down logic of the joystick is inverted.

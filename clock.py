@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 
 from sense_hat import SenseHat
@@ -21,11 +20,13 @@ dimDisplay = True           #Make display dimming an option
 twelvehour = True
 blinkingSecond = True
 blinkingBarometer = True
-orientation = 180               # default orientation is upside down (power cable on top). Can modify in lightLevel() using left and right sticks
-barometerInterval = 3600 * 2    # Update barometer value array size - two hours so we can compare old to new values
-barometerTolerance = 0.01       # parameter for tuning the sensitivity of the barometer LED
-fastBarometerTolerance = 0.02   # parameter for showing faster flash if barometer is rising or falling rapidly
+orientation = 180           # default orientation is upside down (power cable on top). Can modify in lightLevel() using left and right sticks
+secondsPerHour = 3600
+barometerInterval = 3 * secondsPerHour    # Update barometer value array size - hours between oldest and newest reading so we can compare
+barometerTolerance = 0.015       # parameter for tuning the sensitivity of the barometer LED
+fastBarometerTolerance = 0.03   # parameter for showing faster flash if barometer is rising or falling rapidly
 fastBlink = False               # fast blink for rapidly changing barometer
+accuracy = 1000                 # Determine number of decimal places retained in barometer reading
 #End of parameters
 #***********************************************************************************************************
 
@@ -35,7 +36,7 @@ def mToi(pValue):
     return answer
 
 def initBarometer(baromArr, baromInt):
-    currentPressure = int(mToi(sense.get_pressure()) * 100) / 100.
+    currentPressure = int(mToi(sense.get_pressure()) * accuracy) / float(accuracy)
     i = int(baromInt) + 1       #Initialize the array to the number of one-second slots we'll need
     baromArr = [currentPressure] * i
     return baromArr
@@ -117,7 +118,7 @@ def avgPressure(baromArr, phase):            #Get the average pressure for the f
     for i in range (start, start + period):
         avg = avg + baromArr[i]
     avg = avg / period                            #We could return the total instead of the average, but this would be easier to debug if needed
-    avg = int(avg * 1000) / 1000.               #Round to three decimal places so we can do the math later
+    avg = int(avg * accuracy) / float(accuracy)               #Round so we can do the math later
     return avg
         
 number = [
@@ -281,7 +282,7 @@ while True:
 #                if barometerTimer >= barometerInterval:      #get ready to update the barometer dot color
 #                        barometerTimer = 0                   #reinitialize
 #                        oldPressure = currentPressure
-            currentPressure = int(mToi(sense.get_pressure()) * 100) / 100.   #make sure the change is significant - two decimal places
+            currentPressure = int(mToi(sense.get_pressure()) * accuracy) / float(accuracy)   #make sure the change is significant
             pressureArray = shiftPressures(pressureArray, currentPressure)                  #put the new pressure at the end of the array
             oldPressure = pressureArray[0]                                  #look back as far as possible
 #                print (oldPressure, currentPressure, pressureArray)
