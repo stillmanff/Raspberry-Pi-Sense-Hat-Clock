@@ -13,20 +13,22 @@ activeTimeStartHour = 7
 activeTimeStartMinute = 0
 quietTimeStartHour = 22
 quietTimeStartMinute = 0
-clockAlwaysActive = False
-dimDisplayHour = 19         #Controls for night mode on display.
+clockAlwaysActive = True
+dimDisplayHour = 16         #Controls for night mode on display.
 brightDisplayHour = 7       #Future improvement: add formula to approximate sunset times, if needed.
 dimDisplay = True           #Make display dimming an option
 twelvehour = True
 blinkingSecond = True
 blinkingBarometer = True
 orientation = 180           # default orientation is upside down (power cable on top). Can modify in lightLevel() using left and right sticks
-secondsPerHour = 3600
-barometerInterval = 3 * secondsPerHour    # Update barometer value array size - hours between oldest and newest reading so we can compare
-barometerTolerance = 0.015       # parameter for tuning the sensitivity of the barometer LED
-fastBarometerTolerance = 0.03   # parameter for showing faster flash if barometer is rising or falling rapidly
+secondsPerHour = 1800       # actually 2 second blink cycle - one on, one off
+barometerInterval = 6 * secondsPerHour    # Update barometer value array size - hours between oldest and newest reading so we can compare
+barometerTolerance = 0.05       # parameter for tuning the sensitivity of the barometer LED. Measured in in/Hg
+fastBarometerTolerance = 0.2   # parameter for showing faster flash if barometer is rising or falling rapidly. Estimate that 10mb (.3 in/Hg) in 10 hours is a rapid change.
 fastBlink = False               # fast blink for rapidly changing barometer
 accuracy = 1000                 # Determine number of decimal places retained in barometer reading
+printCounter = 60               #debug - print barometer info every minute
+initialPrintCounter = printCounter
 #End of parameters
 #***********************************************************************************************************
 
@@ -198,6 +200,7 @@ clockImage = [
 0,0,0,0,0,0,0,0
 ]
 
+print ('')        #align all status lines
 if twelvehour:
         print ('12 hour mode')
 else:
@@ -210,6 +213,11 @@ if blinkingSecond:
                 print ('Barometer color disabled')
 else:
         print ('Blinking seconds disabled')
+if clockAlwaysActive:
+    print ('Clock always active')
+else:
+    print ('Clock shuts off at night (and stops tracking barometric pressure)')
+            
                 
 
 while True:
@@ -308,7 +316,10 @@ while True:
                 fastBlink = False                                   #Reset to default blink rate
             else:
                 pass          #Nothing changes
-#            print (oldAvg, currAvg, abs(oldAvg - currAvg))
+            printCounter = printCounter - 1
+            if printCounter <= 0:
+                print (oldAvg, currAvg, abs(oldAvg - currAvg), time.asctime(time.localtime(time.time())))
+                printCounter = initialPrintCounter
         else:
             pass
                

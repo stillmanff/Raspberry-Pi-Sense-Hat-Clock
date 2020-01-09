@@ -50,16 +50,20 @@ Changed look-back period to two hours, which is a useful length of time for
 comparing barometric pressures. Look-back (in seconds) is also now
 parameterized to allow for barometer tuning.
 
-Update 1/1/2020: Added double blink on seconds icon if the barometer is
-rising or falling more rapidly than a settable parameter.
-
-Added a few more parameters and tuned the barometer settings.
+Update 1/1/2020: Added double blink on seconds icon if the barometer is rising
+or falling more rapidly than a settable parameter. 
 
 Note that the program is written to use the Pi upside down (power cable on top).
 Therefore, the up/down logic of the joystick is inverted.
 
+Update 1/8/2020: Improved accuracy of barometer prediction. Adjusted barometer
+lookback to six hours, changed thresholds for triggering color changes in barometer
+indicator. Remaining bug: clock stops collecting barometer readings when the display
+is shut off.
+
 Coming features:
-1. Set clock rotation automatically based on orientation sensors
+1. Keep collecting barometer data when the display is off
+2. Use accelerometers to automatically rotate the display
 2. Press the joystick to temporarily display current barometric pressure
 
 Note: None of the other PiHat sensors seem accurate enough for real world use.
