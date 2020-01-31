@@ -61,9 +61,12 @@ lookback to six hours, changed thresholds for triggering color changes in barome
 indicator. Remaining bug: clock stops collecting barometer readings when the display
 is shut off.
 
+Update 1/31/2020: Keep collecting barometer data when the display is off.
+Made data retention time parameter more intuitive. Tuned the intervals and display color
+threshholds to give better predictions.
+
 Coming features:
-1. Keep collecting barometer data when the display is off
-2. Use accelerometers to automatically rotate the display
+1. Use accelerometers to automatically rotate the display
 2. Press the joystick to temporarily display current barometric pressure
 
 Note: None of the other PiHat sensors seem accurate enough for real world use.
