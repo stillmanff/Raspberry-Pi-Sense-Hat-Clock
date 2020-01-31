@@ -13,7 +13,7 @@ activeTimeStartHour = 7
 activeTimeStartMinute = 0
 quietTimeStartHour = 22
 quietTimeStartMinute = 0
-clockAlwaysActive = True
+clockAlwaysActive = False
 dimDisplayHour = 16         #Controls for night mode on display.
 brightDisplayHour = 7       #Future improvement: add formula to approximate sunset times, if needed.
 dimDisplay = True           #Make display dimming an option
@@ -21,13 +21,14 @@ twelvehour = True
 blinkingSecond = True
 blinkingBarometer = True
 orientation = 180           # default orientation is upside down (power cable on top). Can modify in lightLevel() using left and right sticks
-secondsPerHour = 1800       # actually 2 second blink cycle - one on, one off
-barometerInterval = 6 * secondsPerHour    # Update barometer value array size - hours between oldest and newest reading so we can compare
-barometerTolerance = 0.05       # parameter for tuning the sensitivity of the barometer LED. Measured in in/Hg
-fastBarometerTolerance = 0.2   # parameter for showing faster flash if barometer is rising or falling rapidly. Estimate that 10mb (.3 in/Hg) in 10 hours is a rapid change.
+secondsPerHour = 1800       # actually 2 second blink cycle - one on, one off. 1800 per hour.
+hourLookBack = 1.5            # how many hours ago we compare the current reading with
+barometerInterval = hourLookBack * secondsPerHour    # Update barometer value array size - hours between oldest and newest reading so we can compare
+barometerTolerance = 0.02       # parameter for tuning the sensitivity of the barometer LED. Measured in in/Hg
+fastBarometerTolerance = 0.1   # parameter for showing faster flash if barometer is rising or falling rapidly. Estimate that 10mb (.3 in/Hg) in 10 hours is a rapid change.
 fastBlink = False               # fast blink for rapidly changing barometer
 accuracy = 1000                 # Determine number of decimal places retained in barometer reading
-printCounter = 60               #debug - print barometer info every minute
+printCounter = 30               #debug - print barometer info every minute (30 2-second sample intervals)
 initialPrintCounter = printCounter
 #End of parameters
 #***********************************************************************************************************
@@ -64,9 +65,12 @@ def fastBlinkSecond(clockDisplay, dotColor): #do one rapid blink during the on c
 #designing a routine that allows two different ways to interrupt the dormant stage (time and button press) is a little involved. This works, though.
 #The clock is dark while executing this function.
 def holdClock(orientation):           #routine to turn off clock on middle button press, then turn it back on when pressed again
+    global pressureArray                               #Modify the global barometric pressure array
+    global printCounter                                #Print counter too
     clockOff = True                                     #Flag to deal with long presses
     sense.clear()                                      #Turn off the clock
     sense.stick.get_events()                           #Clear all old inputs
+    intervalTime = time.time()                         #Set the counter for updating the barometer.
     while clockOff:                                     #Lets us loop till the explicit set of conditions is satisfied
         sleep (0.25)                                   #Four times a second ought to be enough. Reduce CPU load.
         turnClockOn = sense.stick.get_events()          #Would normally use wait_for_event to sleep till the button is pressed again, but need to wake up now and then to check time
@@ -86,9 +90,23 @@ def holdClock(orientation):           #routine to turn off clock on middle butto
                 clockOff = False
                 sense.stick.get_events()                       #Clear the event queue so the clock doesn't turn right off again
             else:
-                pass                                           #The clock is still supposed to be off - keep going.
+                pass
         else:
             pass
+        
+        #fix to allow clock to be turned off without losing barometer history
+        newIntervalTime = time.time()
+        #print ('start time=', intervalTime, 'end time=', newIntervalTime, 'wait time ', newIntervalTime - intervalTime)
+        if (newIntervalTime - intervalTime) >= 2.:          #Two second cycle, to match the refresh rate when the clock is lit
+            currentPressure = int(mToi(sense.get_pressure()) * accuracy) / float(accuracy)   #make sure the change is significant
+            pressureArray = shiftPressures(pressureArray, currentPressure)                  #put the new pressure at the end of the array
+            intervalTime = newIntervalTime                  #Start counting again
+            printCounter = printCounter - 1                 #our usual barometer sample is every two seconds. This sets the print interval consistent with when the clock is on.
+            if printCounter <= 0:
+                oldAvg = avgPressure(pressureArray, 'first')
+                currAvg = avgPressure(pressureArray, 'last')
+                print ('(clock off)', oldAvg, currAvg, (currAvg - oldAvg), time.asctime(time.localtime(time.time())))    #print the diagnostic
+                printCounter = initialPrintCounter                           #start the count again
 
 def lightLevel(turnClockOn, orientation):     #Added orientation as parameter
     #Note that the clock is meant to be run with the Pi inverted, so up is literally down. That explains the reversed logic in this method.
@@ -216,7 +234,7 @@ else:
 if clockAlwaysActive:
     print ('Clock always active')
 else:
-    print ('Clock shuts off at night (and stops tracking barometric pressure)')
+    print ('Clock shuts off at night')
             
                 
 
@@ -318,7 +336,7 @@ while True:
                 pass          #Nothing changes
             printCounter = printCounter - 1
             if printCounter <= 0:
-                print (oldAvg, currAvg, abs(oldAvg - currAvg), time.asctime(time.localtime(time.time())))
+                print ('(clock on)', oldAvg, currAvg, (currAvg - oldAvg), time.asctime(time.localtime(time.time())))
                 printCounter = initialPrintCounter
         else:
             pass
